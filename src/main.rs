@@ -2,6 +2,7 @@ use strum::IntoEnumIterator; // 0.17.1
 use strum_macros::EnumIter; // 0.17.1
 use itertools::Itertools;
 
+#[derive(Debug, Copy, Clone, EnumIter)]
 enum Suit {
     Diamond,
     Club,
@@ -9,6 +10,7 @@ enum Suit {
     Heart,
 }
 
+#[derive(Debug, Copy, Clone, EnumIter)]
 enum Rank {
     Two,
     Three,
@@ -25,6 +27,7 @@ enum Rank {
     A,
 }
 
+#[derive(Debug)]
 struct Card {
     rank: Rank,
     suit: Suit,
@@ -70,42 +73,21 @@ struct Flop {
     card3: Card,
 }
 
-fn create_deck() -> Vec<T> {
-    let mut deck = Vec::with_capacity(52);
-    for _ in 0..52 {
-        vec.push(Card::new());
-    }
+fn create_deck() -> Vec<Card> {
+    let mut deck: Vec<Card> = Vec::new();
 
-    let mut counter: u8 = 0;
-
-    for (r, s) in iproduct!(Rank::iter(), Suit::iter()) {
-        &deck[counter] = Card(r, s);
-        counter += 1;
+    for suit in Suit::iter() {
+        for rank in Rank::iter() {
+            deck.push(Card { rank, suit });
+        }
     }
     deck
 }
 
 fn main() {
-    let person_one_hand = Hand {
-        card1: Card {
-            rank: Rank::Q,
-            suit: Suit::Heart,
-        },
-        card2: Card {
-            rank: Rank::A,
-            suit: Suit::Club,
-        },
-    };
-    let person_two_hand = Hand {
-        card1: Card {
-            rank: Rank::Five,
-            suit: Suit::Diamond,
-        },
-        card2: Card {
-            rank: Rank::K,
-            suit: Suit::Spade,
-        },
-    };
+    let my_deck = create_deck();
 
-    println!("Value of rank in person one card one: {}", person_one_hand.card1.rank_value())
+    let players = 0;
+
+    loop
 }
