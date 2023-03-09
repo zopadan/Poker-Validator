@@ -1,6 +1,7 @@
 use strum::IntoEnumIterator; // 0.17.1
 use strum_macros::EnumIter; // 0.17.1
 use itertools::Itertools;
+use std::io;
 
 #[derive(Debug, Copy, Clone, EnumIter)]
 enum Suit {
@@ -87,7 +88,13 @@ fn create_deck() -> Vec<Card> {
 fn main() {
     let my_deck = create_deck();
 
-    let players = 0;
+    let mut players = 0;
 
-    loop
+    loop {
+        println!("Enter the number of players:");
+        stdout().flush().unwrap();
+        io::stdin()
+            .read_line(&mut players)
+            .expect("Yo this did not work.");
+    }
 }
