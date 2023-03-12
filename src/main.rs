@@ -1,11 +1,9 @@
 use std::convert::Infallible;
-use strum::IntoEnumIterator; // 0.17.1
-use strum_macros::EnumIter; // 0.17.1
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 use dialoguer::Select;
-use console::Term;
 use itertools::Itertools;
 use std::io;
-use colored::Colorize;
 
 use Poker_Validator::{Card, Rank, Suit, Hand};
 
@@ -39,49 +37,59 @@ fn get_suit() -> Suit {
     suit
 }
 
-fn get_rank() -> Rank {
-    let ranks = [
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "J",
-        "Q",
-        "K",
-        "A", ];
+fn get_rank(suit: Suit, my_deck: &mut Vec<Card>) -> Rank {
+    //Need to: iterate through the deck.  For each instance of a card where Card.suit == suit,
+    // we will need to render a rank string.  This will ensure that the user never gets the option
+    // to deal a card twice.
 
-    let rank_str = Select::new()
+    let mut ranks = Vec::new();
+
+    for card in my_deck {
+        if card.suit == suit {
+            let addable_rank = match card.rank {
+                Rank::Two => "2",
+                Rank::Three => "3",
+                Rank::Four => "4",
+                Rank::Five => "5",
+                Rank::Six => "6",
+                Rank::Seven => "7",
+                Rank::Eight => "8",
+                Rank::Nine => "9",
+                Rank::Ten => "10",
+                Rank::J => "J",
+                Rank::Q => "Q",
+                Rank::K => "K",
+                Rank::A => "A",
+            };
+            ranks.push(addable_rank);
+        }
+    }
+
+    let rank_index = Select::new()
         .with_prompt("Select rank: ")
         .items(&ranks)
         .interact()
         .unwrap();
 
+    let rank_str = ranks[rank_index];
+
     let rank = match rank_str {
-        0 => Rank::Two,
-        1 => Rank::Three,
-        2 => Rank::Four,
-        3 => Rank::Five,
-        4 => Rank::Six ,
-        5 => Rank::Seven,
-        6 => Rank::Eight,
-        7 => Rank::Nine,
-        8 => Rank::Ten,
-        9 => Rank::J,
-        10 => Rank::Q,
-        11 => Rank::K,
-        12 => Rank::A,
+        "2" => Rank::Two,
+        "3" => Rank::Three,
+        "4" => Rank::Four,
+        "5" => Rank::Five,
+        "6" => Rank::Six ,
+        "7" => Rank::Seven,
+        "8" => Rank::Eight,
+        "9" => Rank::Nine,
+        "10" => Rank::Ten,
+        "J" => Rank::J,
+        "Q" => Rank::Q,
+        "K" => Rank::K,
+        "A" => Rank::A,
         _ => panic!("Unexpected value: {:?}", rank_str),
     };
     rank
-}
-
-fn unexpect() {
-    println!("Something unexpected occurred.")
 }
 
 fn remove_card(my_deck: &mut Vec<Card>, card: Card) {
@@ -91,7 +99,7 @@ fn remove_card(my_deck: &mut Vec<Card>, card: Card) {
 
 fn place_card_table(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     let suit = get_suit();
-    let rank = get_rank();
+    let rank = get_rank(suit, my_deck);
     let card = Card { rank, suit };
     remove_card(my_deck, card);
     my_table.push(card);
@@ -100,14 +108,16 @@ fn place_card_table(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
 fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool) {
     println!("===First Card===");
     let suit1 = get_suit();
-    let rank1 = get_rank();
+    let rank1 = get_rank(suit1, my_deck);
     let card1 = Card { rank: rank1, suit: suit1 };
-    print!("===Second Card===");
-    let suit2 = get_suit();
-    let rank2 = get_rank();
-    let card2 = Card { rank: rank2, suit: suit2 };
     remove_card(my_deck, card1);
+
+    println!("===Second Card===");
+    let suit2 = get_suit();
+    let rank2 = get_rank(suit2, my_deck);
+    let card2 = Card { rank: rank2, suit: suit2 };
     remove_card(my_deck, card2);
+
 
     if deal {
         let hand = Hand { card1, card2 };
@@ -126,24 +136,57 @@ fn get_flop(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     place_card_table(my_deck, my_table);
 }
 
+fn calculate() {
+    println!("This is the calculate function!");
+}
+
+fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
+    *my_deck = create_deck();
+    my_table.clear();
+    my_hands.clear();
+}
+
 fn main() {
     let mut my_deck = create_deck();
     let mut my_table = Vec::new();
     let mut my_hands: Vec<Hand> = Vec::new();
-    let options = vec!["Add player hand", "Add folded hand", "Add flop", "Quit"];
 
-    let choice = Select::new()
-        .with_prompt("What would you like to do?")
-        .items(&options)
-        .interact()
-        .unwrap();
+    loop {
+        // NOTE: by doing this in this way, we are re-generating the options vector with each loop
+        // stubbing this for potential future optimization.
+        // Possibly reset options by removing calc odds and start over at the end of each loop.
+        let mut options = vec![
+            "Add player hand", "Add folded hand",
+            "Add flop", "Quit (break and debug print)",
+        ];
+        let calculable: bool = my_hands.len() >= 2 && my_table.len() == 3 && my_deck.len() < 52;
+        let refreshable: bool = my_deck.len() < 52;
 
-    match choice {
-        0 => place_card_hand(&mut my_deck, &mut my_hands, true),
-        1 => place_card_hand(&mut my_deck, &mut my_hands, false),
-        2 => get_flop(&mut my_deck, &mut my_table),
-        3 => return,
-        _ => unexpect(),
+        if calculable {
+            options.insert(options.len() - 1, "Calculate Odds!");
+        }
+
+        if refreshable {
+            options.insert(options.len() - 1, "Start Over");
+        }
+
+        let choice = Select::new()
+            .with_prompt("What would you like to do?")
+            .items(&options)
+            .interact()
+            .unwrap();
+
+        let choice_str = options[choice];
+
+        match choice_str {
+            "Add player hand" => place_card_hand(&mut my_deck, &mut my_hands, true),
+            "Add folded hand" => place_card_hand(&mut my_deck, &mut my_hands, false),
+            "Add flop" => get_flop(&mut my_deck, &mut my_table),
+            "Start Over" => refresh(&mut my_deck, &mut my_table, &mut my_hands),
+            "Calculate Odds!" => calculate(),
+            "Quit (break and debug print)" => break,
+            _ => panic!("Unexpected value {:?}", choice),
+        }
     }
 
     println!("deck is {:?}\n", my_deck);

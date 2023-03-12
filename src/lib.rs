@@ -39,7 +39,6 @@ impl Card {
             Suit::Club => 2,
             Suit::Spade => 3,
             Suit::Heart => 4,
-            _ => 0,
         }
     }
 
@@ -58,7 +57,6 @@ impl Card {
             Rank::Q => 12,
             Rank::K => 13,
             Rank::A => 14,
-            _ => 0,
         }
     }
 }
