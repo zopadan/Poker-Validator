@@ -5,6 +5,7 @@ use dialoguer::Select;
 use console::Term;
 use itertools::Itertools;
 use std::io;
+use colored::Colorize;
 
 use Poker_Validator::{Card, Rank, Suit, Hand};
 
@@ -21,7 +22,7 @@ fn create_deck() -> Vec<Card> {
 }
 
 fn get_suit() -> Suit {
-    let suits = vec!["Spades", "Clubs", "Hearts", "Diamonds"];
+    let suits = vec!["♠", "♣", "♥", "♦"];
     let suit_str = Select::new()
         .with_prompt("Select suit: ")
         .items(&suits)
@@ -29,10 +30,11 @@ fn get_suit() -> Suit {
         .unwrap();
 
     let suit = match suit_str {
-        "Spades" => Suit::Spade,
-        "Clubs" => Suit::Club,
-        "Hearts" => Suit::Heart,
-        "Diamonds" => Suit::Diamond,
+        0 => Suit::Spade,
+        1 => Suit::Club,
+        2 => Suit::Heart,
+        3 => Suit::Diamond,
+        _ => panic!("Unexpected value: {:?}", suit_str),
     };
     suit
 }
@@ -60,21 +62,26 @@ fn get_rank() -> Rank {
         .unwrap();
 
     let rank = match rank_str {
-        "2" => Rank::Two,
-        "3" => Rank::Three,
-        "4" => Rank::Four,
-        "5" => Rank::Five,
-        "6" => Rank::Six ,
-        "7" => Rank::Seven,
-        "8" => Rank::Eight,
-        "9" => Rank::Nine,
-        "10" => Rank::Ten,
-        "J" => Rank::J,
-        "Q" => Rank::Q,
-        "K" => Rank::K,
-        "A" => Rank::A,
+        0 => Rank::Two,
+        1 => Rank::Three,
+        2 => Rank::Four,
+        3 => Rank::Five,
+        4 => Rank::Six ,
+        5 => Rank::Seven,
+        6 => Rank::Eight,
+        7 => Rank::Nine,
+        8 => Rank::Ten,
+        9 => Rank::J,
+        10 => Rank::Q,
+        11 => Rank::K,
+        12 => Rank::A,
+        _ => panic!("Unexpected value: {:?}", rank_str),
     };
     rank
+}
+
+fn unexpect() {
+    println!("Something unexpected occurred.")
 }
 
 fn remove_card(my_deck: &mut Vec<Card>, card: Card) {
@@ -90,7 +97,7 @@ fn place_card_table(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     my_table.push(card);
 }
 
-fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
+fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool) {
     println!("===First Card===");
     let suit1 = get_suit();
     let rank1 = get_rank();
@@ -102,19 +109,21 @@ fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
     remove_card(my_deck, card1);
     remove_card(my_deck, card2);
 
-    let hand = Hand { card1, card2 };
-    my_hands.push(hand);
+    if deal {
+        let hand = Hand { card1, card2 };
+        my_hands.push(hand);
+    }
 }
 
-fn get_flop(my_deck: &mut Vec<Card>) {
+fn get_flop(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     println!("===First Card===");
-    place_card(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>);
+    place_card_table(my_deck, my_table);
 
     println!("===Second Card===");
-    place_card(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>);
+    place_card_table(my_deck, my_table);
 
     println!("===Third Card===");
-    place_card(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>);
+    place_card_table(my_deck, my_table);
 }
 
 fn main() {
@@ -123,22 +132,21 @@ fn main() {
     let mut my_hands: Vec<Hand> = Vec::new();
     let options = vec!["Add player hand", "Add folded hand", "Add flop", "Quit"];
 
-    let mut choice = Select::new()
+    let choice = Select::new()
         .with_prompt("What would you like to do?")
         .items(&options)
         .interact()
         .unwrap();
 
     match choice {
-        "Add player hand".parse().unwrap() => place_card(&mut my_deck, &mut my_table),
-        "Add folded hand".parse().unwrap() => get_hand(&mut my_deck),
-        "Add flop".parse().unwrap() => get_flop(&mut my_deck),
-        "Quit".parse().unwrap() => Ok (()),
-    };
-
-    match choice {
-        "Add player hand".parse().unwrap() => hands.push(item),
-        "Add folded hand".parse().unwrap() => folds.push(item),
-        "Add flop".parse().unwrap() => ,
+        0 => place_card_hand(&mut my_deck, &mut my_hands, true),
+        1 => place_card_hand(&mut my_deck, &mut my_hands, false),
+        2 => get_flop(&mut my_deck, &mut my_table),
+        3 => return,
+        _ => unexpect(),
     }
+
+    println!("deck is {:?}\n", my_deck);
+    println!("table is {:?}\n", my_table);
+    println!("hands are {:?}\n", my_hands);
 }

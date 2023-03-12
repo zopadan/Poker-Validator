@@ -1,4 +1,7 @@
-#[derive(Debug, Copy, Clone, EnumIter)]
+use strum::IntoEnumIterator; // 0.17.1
+use strum_macros::EnumIter; // 0.17.1
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, EnumIter)]
 pub enum Suit {
     Diamond,
     Club,
@@ -6,7 +9,7 @@ pub enum Suit {
     Heart,
 }
 
-#[derive(Debug, Copy, Clone, EnumIter)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone, EnumIter)]
 pub enum Rank {
     Two,
     Three,
@@ -23,7 +26,7 @@ pub enum Rank {
     A,
 }
 
-#[derive(Debug, Clone, Copy, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Card {
     pub rank: Rank,
     pub suit: Suit,
@@ -36,6 +39,7 @@ impl Card {
             Suit::Club => 2,
             Suit::Spade => 3,
             Suit::Heart => 4,
+            _ => 0,
         }
     }
 
@@ -54,10 +58,12 @@ impl Card {
             Rank::Q => 12,
             Rank::K => 13,
             Rank::A => 14,
+            _ => 0,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct Hand {
     pub card1: Card,
     pub card2: Card,
