@@ -1,9 +1,11 @@
 use std::convert::Infallible;
+use std::intrinsics::raw_eq;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use dialoguer::Select;
 use itertools::Itertools;
 use std::io;
+use Rand::rng;
 
 use Poker_Validator::{Card, Rank, Suit, Hand};
 
@@ -126,18 +128,38 @@ fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool
 }
 
 fn get_flop(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
-    println!("===First Card===");
-    place_card_table(my_deck, my_table);
-
-    println!("===Second Card===");
-    place_card_table(my_deck, my_table);
-
-    println!("===Third Card===");
-    place_card_table(my_deck, my_table);
+    for msg in vec!["First", "Second", "Third"] {
+        println!("==={ } Card===", msg);
+        place_card_table(my_deck, my_table);
+    }
 }
 
-fn calculate() {
-    println!("This is the calculate function!");
+fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
+    let i = 0;
+    while i < 2 {
+        let rand_index = rand::thread_rng().gen_range(0..my_deck.len());
+        let rand_card = my_deck[rand_index];
+        my_deck.remove(rand_index);
+        my_table.push(rand_card);
+    }
+}
+
+fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
+    add_turn_river(my_deck, my_table);
+    for item in my_hands.iter() {
+        let mut cards = Vec::new();
+        for card in item {
+            cards.push(card);
+        }
+
+        let combinations = cards
+        .into_iter()
+            .cartesian_product(my_table.into_iter())
+            .combinations(5)
+            .map(|v| v.into_iter().map(|(_, val)| val).collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+
+    }
 }
 
 fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
