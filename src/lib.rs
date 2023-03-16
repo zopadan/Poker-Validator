@@ -63,6 +63,11 @@ impl Card {
 
 #[derive(Debug)]
 pub struct Hand {
-    pub card1: Card,
-    pub card2: Card,
+    pub cards: Option<Vec<Card>>,
+}
+
+impl Default for Hand {
+    fn default() -> Self {
+        Self { cards: None }
+    }
 }

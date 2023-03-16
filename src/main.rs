@@ -5,7 +5,8 @@ use strum_macros::EnumIter;
 use dialoguer::Select;
 use itertools::Itertools;
 use std::io;
-use Rand::rng;
+use rand::distributions::Open01;
+use rand::Rng;
 
 use Poker_Validator::{Card, Rank, Suit, Hand};
 
@@ -94,44 +95,27 @@ fn get_rank(suit: Suit, my_deck: &mut Vec<Card>) -> Rank {
     rank
 }
 
-fn remove_card(my_deck: &mut Vec<Card>, card: Card) {
-    let card_index = my_deck.iter().position(|&c| c == card).unwrap();
-    my_deck.remove(card_index);
-}
-
-fn place_card_table(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
+fn get_card() -> Card {
     let suit = get_suit();
     let rank = get_rank(suit, my_deck);
     let card = Card { rank, suit };
-    remove_card(my_deck, card);
-    my_table.push(card);
+    card
 }
 
-fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool) {
-    println!("===First Card===");
-    let suit1 = get_suit();
-    let rank1 = get_rank(suit1, my_deck);
-    let card1 = Card { rank: rank1, suit: suit1 };
-    remove_card(my_deck, card1);
-
-    println!("===Second Card===");
-    let suit2 = get_suit();
-    let rank2 = get_rank(suit2, my_deck);
-    let card2 = Card { rank: rank2, suit: suit2 };
-    remove_card(my_deck, card2);
-
-
-    if deal {
-        let hand = Hand { card1, card2 };
-        my_hands.push(hand);
+fn move_cards(my_deck: &mut Vec<Card>, cards: Vec<Card>, destination: Option<&mut Vec<Card>>) {
+    for card in cards {
+        let card_index = my_deck.iter().position(|&c| c == card).unwrap();
+        my_deck.remove(card_index);
+        match destination {
+            Some(destination) => destination.push(card),
+            None => Ok(()),
+        }
     }
 }
 
-fn get_flop(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
-    for msg in vec!["First", "Second", "Third"] {
-        println!("==={ } Card===", msg);
-        place_card_table(my_deck, my_table);
-    }
+fn handler() -> Vec<Card> {
+    let hand = Hand { cards: None };
+
 }
 
 fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
@@ -171,7 +155,7 @@ fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec
 fn main() {
     let mut my_deck = create_deck();
     let mut my_table = Vec::new();
-    let mut my_hands: Vec<Hand> = Vec::new();
+    let mut my_hands: [Hand; 9];
 
     loop {
         // NOTE: by doing this in this way, we are re-generating the options vector with each loop
@@ -201,16 +185,15 @@ fn main() {
         let choice_str = options[choice];
 
         match choice_str {
-            "Add player hand" => place_card_hand(&mut my_deck, &mut my_hands, true),
-            "Add folded hand" => place_card_hand(&mut my_deck, &mut my_hands, false),
-            "Add flop" => get_flop(&mut my_deck, &mut my_table),
+            "Add player hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], ),
+            "Add folded hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], None),
+            "Add flop" => move_cards(&mut my_deck, vec![get_card(), get_card(), get_card()], Some(&mut my_table)),
             "Start Over" => refresh(&mut my_deck, &mut my_table, &mut my_hands),
-            "Calculate Odds!" => calculate(),
+            "Calculate Odds!" => calculate(&mut my_deck, &mut my_table, &mut my_hands),
             "Quit (break and debug print)" => break,
             _ => panic!("Unexpected value {:?}", choice),
         }
     }
-
     println!("deck is {:?}\n", my_deck);
     println!("table is {:?}\n", my_table);
     println!("hands are {:?}\n", my_hands);
