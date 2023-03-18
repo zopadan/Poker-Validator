@@ -102,10 +102,14 @@ fn get_card() -> Card {
     card
 }
 
+fn remove_card(my_deck: &mut Vec<Card>, card: &Card) {
+    let card_index = my_deck.iter().position(|&c| c == card).unwrap();
+    my_deck.remove(card_index);
+}
+
 fn move_cards(my_deck: &mut Vec<Card>, cards: Vec<Card>, destination: Option<&mut Vec<Card>>) {
     for card in cards {
-        let card_index = my_deck.iter().position(|&c| c == card).unwrap();
-        my_deck.remove(card_index);
+        remove_card(my_deck, &card);
         match destination {
             Some(destination) => destination.push(card),
             None => Ok(()),
@@ -113,9 +117,9 @@ fn move_cards(my_deck: &mut Vec<Card>, cards: Vec<Card>, destination: Option<&mu
     }
 }
 
-fn handler() -> Vec<Card> {
-    let hand = Hand { cards: None };
-
+fn handler(my_deck: &mut Vec<Card>, cards: Vec<Card>, my_hands: &mut Vec<Hand>) -> Vec<Card> {
+    
+    let hand = Hand { cards: Some(cards) };
 }
 
 fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
