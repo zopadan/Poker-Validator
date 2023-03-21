@@ -26,6 +26,7 @@ pub enum Rank {
     A,
 }
 
+
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Card {
     pub rank: Rank,
@@ -33,7 +34,7 @@ pub struct Card {
 }
 
 impl Card {
-    fn suit_value(&self) -> u8 {
+    pub fn suit_value(&self) -> u8 {
         match self.suit {
             Suit::Diamond => 1,
             Suit::Club => 2,
@@ -42,7 +43,7 @@ impl Card {
         }
     }
 
-    fn rank_value(&self) -> u8 {
+    pub fn rank_value(&self) -> u8 {
         match self.rank {
             Rank::Two => 2,
             Rank::Three => 3,
@@ -58,6 +59,9 @@ impl Card {
             Rank::K => 13,
             Rank::A => 14,
         }
+    }
+    pub fn card_value(&self) -> u8 {
+        self.rank_value() + self.suit_value()
     }
 }
 

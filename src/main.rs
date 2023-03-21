@@ -1,15 +1,15 @@
 use std::convert::Infallible;
-use std::intrinsics::raw_eq;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use dialoguer::Select;
 use itertools::Itertools;
 use std::io;
+use std::collections::HashMap;
 use rand::distributions::Open01;
 use rand::Rng;
-
 use Poker_Validator::{Card, Rank, Suit, Hand};
-
+use Poker_Validator::Rank::{A, Two};
+use Poker_Validator::Suit::{Diamond, Heart};
 
 fn create_deck() -> Vec<Card> {
     let mut deck: Vec<Card> = Vec::new();
@@ -95,7 +95,7 @@ fn get_rank(suit: Suit, my_deck: &mut Vec<Card>) -> Rank {
     rank
 }
 
-fn get_card() -> Card {
+fn get_card(my_deck: &mut Vec<Card>) -> Card {
     let suit = get_suit();
     let rank = get_rank(suit, my_deck);
     let card = Card { rank, suit };
@@ -103,7 +103,7 @@ fn get_card() -> Card {
 }
 
 fn remove_card(my_deck: &mut Vec<Card>, card: &Card) {
-    let card_index = my_deck.iter().position(|&c| c == card).unwrap();
+    let card_index = my_deck.iter().position(|&c| c == *card).unwrap();
     my_deck.remove(card_index);
 }
 
@@ -112,14 +112,17 @@ fn move_cards(my_deck: &mut Vec<Card>, cards: Vec<Card>, destination: Option<&mu
         remove_card(my_deck, &card);
         match destination {
             Some(destination) => destination.push(card),
-            None => Ok(()),
+            None => (),
         }
     }
 }
 
-fn handler(my_deck: &mut Vec<Card>, cards: Vec<Card>, my_hands: &mut Vec<Hand>) -> Vec<Card> {
-    
+fn handler(my_deck: &mut Vec<Card>, cards: Vec<Card>, my_hands: &mut Vec<Hand>) {
+    for card in cards {
+        remove_card(my_deck, &card);
+    }
     let hand = Hand { cards: Some(cards) };
+    my_hands.push(hand);
 }
 
 fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
@@ -132,22 +135,71 @@ fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     }
 }
 
-fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
-    add_turn_river(my_deck, my_table);
-    for item in my_hands.iter() {
-        let mut cards = Vec::new();
-        for card in item {
-            cards.push(card);
+//fn get_combos(iterator: &mut Vec<Card>, size: usize) -> &mut Vec<Vec<Card>> {
+//    let & mut combinations = iterator
+//        .into_iter()
+//        .cartesian_product(my_table.into_iter())
+//        .combinations(size)
+//        .map(|v| v.into_iter().map(|(_, val)| val).collect::<Vec<_>>())
+//        .collect::<Vec<_>>();
+//    combinations
+//}
+
+fn is_flush(card_set: &mut Vec<Card>) -> bool {
+    let mut is_flush: bool = true;
+    let suit: Suit = card_set[0].suit;
+    for card in card_set {
+        if card.suit != suit {
+            is_flush = false;
+            return is_flush;
         }
-
-        let combinations = cards
-        .into_iter()
-            .cartesian_product(my_table.into_iter())
-            .combinations(5)
-            .map(|v| v.into_iter().map(|(_, val)| val).collect::<Vec<_>>())
-            .collect::<Vec<_>>();
-
     }
+    is_flush
+}
+
+fn is_straight(card_set: &mut Vec<Card>) -> bool {
+    let mut is_straight: bool = false;
+    card_set.sort_by(|a, b| b.rank_value().cmp(&a.rank_value()));
+    is_straight
+}
+
+fn get_lowest(card_set: &mut Vec<Card>) -> Card {
+    let mut lowest = Card { rank: A, suit: Heart };
+    for card in card_set {
+        if card.card_value() < lowest.card_value() {
+            lowest = *card;
+        }
+    }
+    lowest
+}
+
+fn get_score(card_set: &mut Vec<Card>) {
+
+}
+
+fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &Vec<Hand>) {
+    //add_turn_river(my_deck, my_table);
+    //let mut hand_combos = Vec::new();
+    //let mut table_combos = Vec::new();
+    //let mut scores = Vec::new();
+    //for hand in my_hands.iter() {
+    //    for i in (1..2) {
+    //        hand_combos.push(get_combos(&mut hand.cards.unwrap(), i));
+    //    }
+    //}
+    //for i in (3..4) {
+    //    table_combos.push(get_combos(my_table, i));
+    //}
+    ////combine only if total is 5.  Run get combos again
+    //for combo1 in hand_combos {
+    //    for combo2 in table_combos {
+    //        if combo1.len() + combo2.len() == 5 {
+    //            combo1.append(combo2)
+    //            scores.push(get_score);
+    //        }
+    //    }
+    //}
+    println!("This is the calculate method!");
 }
 
 fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
@@ -159,7 +211,7 @@ fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec
 fn main() {
     let mut my_deck = create_deck();
     let mut my_table = Vec::new();
-    let mut my_hands: [Hand; 9];
+    let mut my_hands = Vec::new();
 
     loop {
         // NOTE: by doing this in this way, we are re-generating the options vector with each loop
@@ -189,9 +241,9 @@ fn main() {
         let choice_str = options[choice];
 
         match choice_str {
-            "Add player hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], ),
-            "Add folded hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], None),
-            "Add flop" => move_cards(&mut my_deck, vec![get_card(), get_card(), get_card()], Some(&mut my_table)),
+            "Add player hand" => handler(&mut my_deck, vec![get_card(&mut my_deck), get_card(&mut my_deck)], &mut my_hands),
+            "Add folded hand" => move_cards(&mut my_deck, vec![get_card(&mut my_deck), get_card(&mut my_deck)], None),
+            "Add flop" => move_cards(&mut my_deck, vec![get_card(&mut my_deck), get_card(&mut my_deck), get_card(&mut my_deck)], Some(&mut my_table)),
             "Start Over" => refresh(&mut my_deck, &mut my_table, &mut my_hands),
             "Calculate Odds!" => calculate(&mut my_deck, &mut my_table, &mut my_hands),
             "Quit (break and debug print)" => break,
