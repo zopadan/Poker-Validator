@@ -1,11 +1,10 @@
+use std::collections::HashMap;
 use std::convert::Infallible;
-use std::intrinsics::raw_eq;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use dialoguer::Select;
 use itertools::Itertools;
 use std::io;
-use rand::distributions::Open01;
 use rand::Rng;
 
 use Poker_Validator::{Card, Rank, Suit, Hand};
@@ -95,36 +94,41 @@ fn get_rank(suit: Suit, my_deck: &mut Vec<Card>) -> Rank {
     rank
 }
 
-fn get_card() -> Card {
-    let suit = get_suit();
-    let rank = get_rank(suit, my_deck);
-    let card = Card { rank, suit };
-    card
-}
-
 fn remove_card(my_deck: &mut Vec<Card>, card: &Card) {
-    let card_index = my_deck.iter().position(|&c| c == card).unwrap();
+    let card_index = my_deck.iter().position(|&c| c == *card).unwrap();
     my_deck.remove(card_index);
 }
 
-fn move_cards(my_deck: &mut Vec<Card>, cards: Vec<Card>, destination: Option<&mut Vec<Card>>) {
-    for card in cards {
-        remove_card(my_deck, &card);
-        match destination {
-            Some(destination) => destination.push(card),
-            None => Ok(()),
-        }
+fn place_card_table(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
+    let suit = get_suit();
+    let rank = get_rank(suit, my_deck);
+    let card = Card { rank, suit };
+    remove_card(my_deck, &card);
+    my_table.push(card);
+}
+
+fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool) {
+    println!("===First Card===");
+    let suit1 = get_suit();
+    let rank1 = get_rank(suit1, my_deck);
+    let card1 = Card { rank: rank1, suit: suit1 };
+    remove_card(my_deck, &card1);
+
+    println!("===Second Card===");
+    let suit2 = get_suit();
+    let rank2 = get_rank(suit2, my_deck);
+    let card2 = Card { rank: rank2, suit: suit2 };
+    remove_card(my_deck, &card2);
+
+
+    if deal {
+        let hand = Hand { card1, card2 };
+        my_hands.push(hand);
     }
 }
 
-fn handler(my_deck: &mut Vec<Card>, cards: Vec<Card>, my_hands: &mut Vec<Hand>) -> Vec<Card> {
-    
-    let hand = Hand { cards: Some(cards) };
-}
-
-fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
-    let i = 0;
-    while i < 2 {
+fn fill_cards(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
+    while my_table.len() < 5 {
         let rand_index = rand::thread_rng().gen_range(0..my_deck.len());
         let rand_card = my_deck[rand_index];
         my_deck.remove(rand_index);
@@ -132,22 +136,35 @@ fn add_turn_river(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
     }
 }
 
-fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
-    add_turn_river(my_deck, my_table);
-    for item in my_hands.iter() {
-        let mut cards = Vec::new();
-        for card in item {
-            cards.push(card);
-        }
+fn get_combos(iterator: &mut Vec<Card>, size: usize) -> Vec<Vec<&Card>> {
+    let mut combinations = iterator
+        .iter()
+        .combinations(size)
+        .collect::<Vec<_>>();
+    combinations
+}
 
-        let combinations = cards
-        .into_iter()
-            .cartesian_product(my_table.into_iter())
-            .combinations(5)
-            .map(|v| v.into_iter().map(|(_, val)| val).collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+//fn get_score(combo: &mut Vec<&Card>) {
+//    println!("In get_score: The combo being worked on is {:?}", combo);
+//}
+//
+//fn get_best_score(combos: &mut Vec<Vec<&Card>>, hand_cards: &mut Vec<&Card>) {
+//    let mut local_scores = Vec::new();
+//    for combo in combos {
+//        combo.append(hand_cards);
+//        local_scores.push(get_score(combo));
+//    }
+//}
 
-    }
+
+//YOU ARE HERE.  WE NEED TO FIGURE OUT HOW TO BORROW ALL THE DATA AND GET OUR HIGH SCORES.
+fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &Vec<Hand>) {
+    fill_cards(my_deck, my_table);
+    //let mut scores: HashMap<Hand, Option<u8>> = HashMap::new();
+
+    let mut four_combos = get_combos(my_table, 4);
+    let mut three_combos = get_combos(my_table, 3);
+
 }
 
 fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
@@ -159,7 +176,7 @@ fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec
 fn main() {
     let mut my_deck = create_deck();
     let mut my_table = Vec::new();
-    let mut my_hands: [Hand; 9];
+    let mut my_hands: Vec<Hand> = Vec::new();
 
     loop {
         // NOTE: by doing this in this way, we are re-generating the options vector with each loop
@@ -167,13 +184,16 @@ fn main() {
         // Possibly reset options by removing calc odds and start over at the end of each loop.
         let mut options = vec![
             "Add player hand", "Add folded hand",
-            "Add flop", "Quit (break and debug print)",
+            "Add card to table", "Quit (break and debug print)",
         ];
-        let calculable: bool = my_hands.len() >= 2 && my_table.len() == 3 && my_deck.len() < 52;
+        let calculable: bool = my_hands.len() >= 2 && my_table.len() >= 3 && my_deck.len() < 52;
         let refreshable: bool = my_deck.len() < 52;
 
         if calculable {
             options.insert(options.len() - 1, "Calculate Odds!");
+            if my_table.len() >= 4 {
+                options.remove(3);
+            }
         }
 
         if refreshable {
@@ -189,15 +209,16 @@ fn main() {
         let choice_str = options[choice];
 
         match choice_str {
-            "Add player hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], ),
-            "Add folded hand" => move_cards(&mut my_deck, vec![get_card(), get_card()], None),
-            "Add flop" => move_cards(&mut my_deck, vec![get_card(), get_card(), get_card()], Some(&mut my_table)),
+            "Add player hand" => place_card_hand(&mut my_deck, &mut my_hands, true),
+            "Add folded hand" => place_card_hand(&mut my_deck, &mut my_hands, false),
+            "Add card to table" => place_card_table(&mut my_deck, &mut my_table),
             "Start Over" => refresh(&mut my_deck, &mut my_table, &mut my_hands),
             "Calculate Odds!" => calculate(&mut my_deck, &mut my_table, &mut my_hands),
             "Quit (break and debug print)" => break,
             _ => panic!("Unexpected value {:?}", choice),
         }
     }
+
     println!("deck is {:?}\n", my_deck);
     println!("table is {:?}\n", my_table);
     println!("hands are {:?}\n", my_hands);
