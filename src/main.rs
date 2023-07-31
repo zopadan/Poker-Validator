@@ -1,13 +1,8 @@
-use std::collections::HashMap;
-use std::convert::Infallible;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 use dialoguer::Select;
 use itertools::Itertools;
-use std::io;
-use rand::Rng;
 
-use Poker_Validator::{Card, Rank, Suit, Hand};
+use Poker_Validator::{Card, Rank, Suit, Hand, PokerGame};
 
 
 fn create_deck() -> Vec<Card> {
@@ -84,7 +79,7 @@ fn get_rank(suit: Suit, my_deck: &mut Vec<Card>) -> Rank {
         "7" => Rank::Seven,
         "8" => Rank::Eight,
         "9" => Rank::Nine,
-        "10" => Rank::Ten,
+        "10"=> Rank::Ten,
         "J" => Rank::J,
         "Q" => Rank::Q,
         "K" => Rank::K,
@@ -127,17 +122,8 @@ fn place_card_hand(my_deck: &mut Vec<Card>, my_hands: &mut Vec<Hand>, deal: bool
     }
 }
 
-fn fill_cards(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>) {
-    while my_table.len() < 5 {
-        let rand_index = rand::thread_rng().gen_range(0..my_deck.len());
-        let rand_card = my_deck[rand_index];
-        my_deck.remove(rand_index);
-        my_table.push(rand_card);
-    }
-}
-
-fn get_combos(iterator: &mut Vec<Card>, size: usize) -> Vec<Vec<&Card>> {
-    let mut combinations = iterator
+fn get_combos(iterator: &Vec<Card>, size: usize) -> Vec<Vec<&Card>> {
+    let combinations = iterator
         .iter()
         .combinations(size)
         .collect::<Vec<_>>();
@@ -158,13 +144,15 @@ fn get_combos(iterator: &mut Vec<Card>, size: usize) -> Vec<Vec<&Card>> {
 
 
 //YOU ARE HERE.  WE NEED TO FIGURE OUT HOW TO BORROW ALL THE DATA AND GET OUR HIGH SCORES.
-fn calculate(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &Vec<Hand>) {
-    fill_cards(my_deck, my_table);
+fn calculate(game_state: &mut PokerGame) {
+    game_state.fill_cards();
     //let mut scores: HashMap<Hand, Option<u8>> = HashMap::new();
 
-    let mut four_combos = get_combos(my_table, 4);
-    let mut three_combos = get_combos(my_table, 3);
+    let four_combos = get_combos(&game_state.table_cards, 4);
+    let three_combos = get_combos(&game_state.table_cards, 3);
 
+    println!("Four combos are {:?}", four_combos);
+    println!("Three combos are {:?}", three_combos);
 }
 
 fn refresh(my_deck: &mut Vec<Card>, my_table: &mut Vec<Card>, my_hands: &mut Vec<Hand>) {
@@ -208,12 +196,14 @@ fn main() {
 
         let choice_str = options[choice];
 
+        let mut game_state = PokerGame { player_hands: my_hands, table_cards: my_table, deck_cards: my_deck };
+
         match choice_str {
             "Add player hand" => place_card_hand(&mut my_deck, &mut my_hands, true),
             "Add folded hand" => place_card_hand(&mut my_deck, &mut my_hands, false),
             "Add card to table" => place_card_table(&mut my_deck, &mut my_table),
             "Start Over" => refresh(&mut my_deck, &mut my_table, &mut my_hands),
-            "Calculate Odds!" => calculate(&mut my_deck, &mut my_table, &mut my_hands),
+            "Calculate Odds!" => calculate(&mut game_state),
             "Quit (break and debug print)" => break,
             _ => panic!("Unexpected value {:?}", choice),
         }

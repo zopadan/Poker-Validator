@@ -1,5 +1,5 @@
-use strum::IntoEnumIterator; // 0.17.1
 use strum_macros::EnumIter; // 0.17.1
+use rand::Rng;
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, EnumIter)]
 pub enum Suit {
@@ -61,14 +61,26 @@ impl Card {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Hand {
     pub card1: Card,
     pub card2: Card,
 }
 
-//impl Default for Hand {
-//    fn default() -> Self {
-//        Self { cards: None }
-//    }
-//}
+#[derive(Debug)]
+pub struct PokerGame {
+    pub player_hands: Vec<Hand>,
+    pub table_cards: Vec<Card>,
+    pub deck_cards: Vec<Card>,
+}
+
+impl PokerGame {
+    pub fn fill_cards(&mut self) {
+        while self.table_cards.len() < 5 {
+            let rand_index = rand::thread_rng().gen_range(0..self.deck_cards.len());
+            let rand_card = self.deck_cards[rand_index];
+            self.deck_cards.remove(rand_index);
+            self.table_cards.push(rand_card);
+        }
+    }
+}
